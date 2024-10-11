@@ -1,8 +1,9 @@
 import os
 import logging
+import requests
 from flask import Flask
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -17,29 +18,29 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Telegram Bot and Flask Server are running!"
+    return "Telegram AI Bot is running!"
 
-# Define a simple function for keyword-based responses
-def get_response(text):
-    responses = {
-        "hello": "Hello! How can I assist you today?",
-        "how are you": "I'm just a bot, but I'm doing great! How about you?",
-        "what is your name": "I'm your friendly Telegram bot!",
-        "bye": "Goodbye! Have a great day!",
-    }
-    for keyword, response in responses.items():
-        if keyword in text.lower():
-            return response
-    return "I'm not sure how to respond to that."
+# Function to generate a response using Hugging Face Transformers API
+def generate_response(prompt):
+    # Hugging Face Inference API endpoint for a text generation model
+    hf_api_url = "https://api-inference.huggingface.co/models/distilgpt2"  # You can change the model here
+    headers = {"Authorization": f"Bearer {os.getenv('HUGGINGFACE_API_KEY')}"}
+    
+    response = requests.post(hf_api_url, headers=headers, json={"inputs": prompt})
+    if response.status_code == 200:
+        return response.json()[0]['generated_text']
+    else:
+        logger.error(f"Error generating response: {response.text}")
+        return "Sorry, I couldn't process your request."
 
 # Start command for the bot
-async def start(update: Update, context):
-    await update.message.reply_text('Welcome! Ask me anything!')
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text('Welcome! You can ask me anything.')
 
 # Handle incoming text messages
-async def handle_message(update: Update, context):
-    text = update.message.text
-    answer = get_response(text)
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_message = update.message.text
+    answer = generate_response(user_message)
     await update.message.reply_text(answer)
 
 # Function to run the Telegram bot
