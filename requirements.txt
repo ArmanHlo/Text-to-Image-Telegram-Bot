@@ -1,5 +1,6 @@
-Flask==3.0.3
-python-telegram-bot==21.6
-transformers==4.33.0
-torch==2.0.1
-python-dotenv==1.0.0
+Flask==2.2.2
+python-telegram-bot==20.0
+transformers==4.21.0
+torch==1.11.0
+numpy<2
+dotenv==0.20.0
