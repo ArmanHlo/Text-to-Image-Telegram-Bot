@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Set up logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Initialize Flask app
@@ -40,9 +40,12 @@ async def start(update: Update, context):
 
 # Handle incoming text messages
 async def handle_message(update: Update, context):
-    text = update.message.text
-    answer = get_response(text)
-    await update.message.reply_text(answer)
+    try:
+        text = update.message.text
+        answer = get_response(text)
+        await update.message.reply_text(answer)
+    except Exception as e:
+        logger.error(f"Error in handle_message: {e}")
 
 # Function to run the Telegram bot
 async def run_telegram_bot():
@@ -62,4 +65,4 @@ if __name__ == '__main__':
     
     # Run the Flask app
     port = int(os.environ.get('PORT', 5001))
-    app.run(host='0.0.0.0', port=port)  # Start Flask app
+    app.run(host='0.0.0.0', port=port, debug=True)  # Start Flask app
