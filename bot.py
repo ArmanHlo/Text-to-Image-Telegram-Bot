@@ -50,6 +50,6 @@ def run_telegram_bot():
     application.run_polling()
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5001))
     app.run(host='0.0.0.0', port=port)  # Start Flask app
     run_telegram_bot()  # Start Telegram bot
