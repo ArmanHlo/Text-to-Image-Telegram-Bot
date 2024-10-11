@@ -1,5 +1,6 @@
 import os
 import logging
+import threading
 from flask import Flask
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
@@ -50,6 +51,10 @@ def run_telegram_bot():
     application.run_polling()
 
 if __name__ == '__main__':
+    # Start the Telegram bot in a separate thread
+    telegram_thread = threading.Thread(target=run_telegram_bot)
+    telegram_thread.start()
+    
+    # Run the Flask app
     port = int(os.environ.get('PORT', 5001))
     app.run(host='0.0.0.0', port=port)  # Start Flask app
-    run_telegram_bot()  # Start Telegram bot
