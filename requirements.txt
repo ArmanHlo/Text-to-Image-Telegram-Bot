@@ -1,6 +1,6 @@
 Flask==2.2.2
 python-telegram-bot==20.0
 transformers==4.21.0
-torch==1.11.0
+torch==2.0.0  # Updated to a compatible version
 numpy<2
-dotenv==0.20.0
+python-dotenv==0.20.0
