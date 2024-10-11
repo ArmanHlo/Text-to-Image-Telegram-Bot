@@ -1,6 +1,7 @@
 import os
 import logging
 import threading
+import asyncio
 from flask import Flask
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
@@ -44,15 +45,19 @@ async def handle_message(update: Update, context):
     await update.message.reply_text(answer)
 
 # Function to run the Telegram bot
-def run_telegram_bot():
+async def run_telegram_bot():
     application = ApplicationBuilder().token(os.getenv('TELEGRAM_BOT_TOKEN')).build()
     application.add_handler(CommandHandler('start', start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    application.run_polling()
+    await application.run_polling()
 
 if __name__ == '__main__':
-    # Start the Telegram bot in a separate thread
-    telegram_thread = threading.Thread(target=run_telegram_bot)
+    # Start the Telegram bot in a separate asyncio event loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    # Run the Telegram bot in a separate thread
+    telegram_thread = threading.Thread(target=loop.run_until_complete, args=(run_telegram_bot(),))
     telegram_thread.start()
     
     # Run the Flask app
