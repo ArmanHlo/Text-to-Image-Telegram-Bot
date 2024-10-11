@@ -64,5 +64,5 @@ if __name__ == '__main__':
     telegram_thread.start()
     
     # Run the Flask app
-    port = int(os.environ.get('PORT', 5001))
+    port = int(os.environ.get('PORT', 4000))
     app.run(host='0.0.0.0', port=port, debug=True)  # Start Flask app
