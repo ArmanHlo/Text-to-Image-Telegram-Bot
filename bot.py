@@ -1,68 +1,69 @@
 import os
-import logging
-import threading
-import asyncio
-from flask import Flask
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
-from dotenv import load_dotenv
+from pytube import YouTube
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler
 
-# Load environment variables from .env file
-load_dotenv()
+# Use environment variables for sensitive information
+API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
 
-# Set up logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+# Constants for conversation steps
+DOWNLOADING = 1
 
-# Initialize Flask app
-app = Flask(__name__)
+# Handle the start command
+async def start(update, context):
+    '''Start command handler'''
+    await update.message.reply_text("Hello! Send me a YouTube link, and I'll give you a download option for the video.")
 
-@app.route('/')
-def home():
-    return "Telegram Bot and Flask Server are running!"
-
-# Define a simple function for keyword-based responses
-def get_response(text):
-    responses = {
-        "hello": "Hello! How can I assist you today?",
-        "how are you": "I'm just a bot, but I'm doing great! How about you?",
-        "what is your name": "I'm your friendly Telegram bot!",
-        "bye": "Goodbye! Have a great day!",
-    }
-    for keyword, response in responses.items():
-        if keyword in text.lower():
-            return response
-    return "I'm not sure how to respond to that."
-
-# Start command for the bot
-async def start(update: Update, context):
-    await update.message.reply_text('Welcome! Ask me anything!')
-
-# Handle incoming text messages
-async def handle_message(update: Update, context):
+# Handle YouTube links
+async def handle_youtube_link(update, context):
+    '''Process YouTube link and give download options'''
     try:
-        text = update.message.text
-        answer = get_response(text)
-        await update.message.reply_text(answer)
-    except Exception as e:
-        logger.error(f"Error in handle_message: {e}")
+        # Get YouTube URL from the user's message
+        youtube_url = update.message.text
 
-# Function to run the Telegram bot
-async def run_telegram_bot():
-    application = ApplicationBuilder().token(os.getenv('TELEGRAM_BOT_TOKEN')).build()
+        # Check if it's a valid YouTube URL
+        if "youtube.com" not in youtube_url and "youtu.be" not in youtube_url:
+            await update.message.reply_text("Please send a valid YouTube link.")
+            return
+        
+        await update.message.reply_text("Processing your YouTube link...")
+
+        # Download the YouTube video using pytube
+        yt = YouTube(youtube_url)
+
+        # Get the highest resolution stream for download
+        stream = yt.streams.get_highest_resolution()
+
+        # Specify file path for download (use the video's title)
+        video_title = yt.title.replace(" ", "_")
+        video_path = f"{video_title}.mp4"
+        
+        # Download the video to local file
+        stream.download(filename=video_path)
+
+        # Send the video file back to the user
+        await update.message.reply_text(f"Downloading video: {yt.title}")
+        
+        # Send the video file to the user
+        await update.message.reply_video(video=open(video_path, 'rb'))
+        
+        # Clean up the file after sending it
+        if os.path.exists(video_path):
+            os.remove(video_path)
+
+    except Exception as e:
+        await update.message.reply_text(f"Error processing video: {str(e)}")
+
+# Run the Telegram bot
+def run_telegram_bot():
+    # Set up the application with the bot token
+    application = Application.builder().token(API_TOKEN).build()
+
+    # Command and message handlers
     application.add_handler(CommandHandler('start', start))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    await application.run_polling()
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_youtube_link))
+
+    # Start polling for updates
+    application.run_polling()
 
 if __name__ == '__main__':
-    # Start the Telegram bot in a separate asyncio event loop
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
-    # Run the Telegram bot in a separate thread
-    telegram_thread = threading.Thread(target=loop.run_until_complete, args=(run_telegram_bot(),))
-    telegram_thread.start()
-    
-    # Run the Flask app
-    port = int(os.environ.get('PORT', 4000))
-    app.run(host='0.0.0.0', port=port, debug=True)  # Start Flask app
+    run_telegram_bot()
