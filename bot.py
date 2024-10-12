@@ -1,55 +1,82 @@
-import telebot
-from diffusers import StableDiffusionPipeline
-import torch
-from flask import Flask, request, abort
+import os
+import httpx
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+from PIL import Image
+from io import BytesIO
 
-# Replace 'YOUR_BOT_TOKEN' with your actual bot token
-bot = telebot.TeleBot('7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
+# You can use either Pexels or Unsplash for free image search.
+# Set your API key for the chosen service.
+PEXELS_API_KEY = os.getenv("cXrwQwz9h3rzVzCkwT5mdIrbJY6LzSxw5JlNz4KGEyCaCkH6WPJe7ybI")  # Replace with your Pexels API key
+UNSPLASH_ACCESS_KEY = os.getenv("aNzTrVHwB-aL3x5KW5FpNubfRLFw5nVr3512Jxde0KQ")  # Replace with your Unsplash Access Key
 
-# Load the Stable Diffusion model
-model_id = "runwayml/stable-diffusion-v1-5"  # Replace with your preferred model
+# Function to search images using Pexels API
+async def search_image(description):
+    headers = {
+        "Authorization": PEXELS_API_KEY
+    }
+    url = f"https://api.pexels.com/v1/search?query={description}&per_page=1"
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            if data["photos"]:
+                return data["photos"][0]["src"]["original"]
+        return None
 
-# Ensure that the pipeline runs on the appropriate device (CPU/GPU)
-device = "cuda" if torch.cuda.is_available() else "cpu"
-pipe = StableDiffusionPipeline.from_pretrained(model_id)
-pipe = pipe.to(device)  # Move the pipeline to the appropriate device
+# Function to search images using Unsplash API
+async def search_unsplash_image(description):
+    url = f"https://api.unsplash.com/photos/random?query={description}&client_id={UNSPLASH_ACCESS_KEY}"
 
-# Flask app to run webhook on port 6000
-app = Flask(__name__)
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            return data["urls"]["regular"]
+        return None
 
-# Your bot's URL (this needs to be publicly accessible)
-WEBHOOK_URL = 'https://yourdomain.com/webhook'  # Replace with your actual domain
+# Start command to welcome users
+async def start(update: Update, context):
+    await update.message.reply_text("Hello! Send me a description, and I'll fetch an image for you.")
 
-@app.route("/webhook", methods=['POST'])
-def webhook():
-    if request.headers.get('Content-Type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return '', 200
+# Handle user input for image generation
+async def handle_message(update: Update, context):
+    description = update.message.text
+    await update.message.reply_text(f"Searching for an image based on: {description}...")
+
+    # Search for an image (you can switch between Pexels or Unsplash here)
+    image_url = await search_image(description)  # Pexels
+    # image_url = await search_unsplash_image(description)  # Unsplash
+
+    if image_url:
+        # Fetch and convert the image to JPG
+        async with httpx.AsyncClient() as client:
+            response = await client.get(image_url)
+            img = Image.open(BytesIO(response.content))
+            img_jpg = img.convert('RGB')
+
+            # Save and send the JPG image
+            img_jpg.save('image.jpg')
+            with open('image.jpg', 'rb') as img_file:
+                await update.message.reply_photo(photo=img_file)
     else:
-        abort(403)
+        await update.message.reply_text("Sorry, I couldn't find an image for that description.")
 
-@bot.message_handler(func=lambda message: True)
-def generate_image(message):
-    prompt = message.text
-    try:
-        # Generate image using the provided prompt
-        image = pipe(prompt, guidance_scale=7.5, num_inference_steps=20).images[0]
-        image_path = "output.jpg"
-        image.save(image_path)
+# Main function to run the bot
+async def main():
+    # Set up Telegram bot token
+    bot_token = os.getenv("7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA")  # Replace with your Telegram Bot token
+    app = ApplicationBuilder().token(bot_token).build()
 
-        # Send the image back to the user
-        with open(image_path, "rb") as img:
-            bot.send_photo(message.chat.id, img)
+    # Add command and message handlers
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    except Exception as e:
-        bot.send_message(message.chat.id, f"Error generating image: {str(e)}")
+    # Run the bot
+    await app.start()
+    await app.idle()
 
 if __name__ == "__main__":
-    # Set up the webhook
-    bot.remove_webhook()
-    bot.set_webhook(url=WEBHOOK_URL)
-
-    # Run Flask app on port 6000
-    app.run(host='0.0.0.0', port=6000)
+    import asyncio
+    asyncio.run(main())
