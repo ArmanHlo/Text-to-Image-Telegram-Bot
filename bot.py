@@ -11,6 +11,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 # Use environment variables for sensitive information
 TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
 DEEPAI_API_KEY = os.getenv('DEEPAI_API_KEY', '336eedc6-788a-4b37-9290-5ba78b68b980')  # Add your DeepAI API key here
+
 # Flask app for port binding
 app = Flask(__name__)
 
