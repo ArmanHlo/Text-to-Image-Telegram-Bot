@@ -10,7 +10,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 # Use environment variables for sensitive information
 TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
-# DEEPAI_API_KEY = os.getenv('DEEPAI_API_KEY', 'YOUR_DEEPAI_API_KEY')  # Remove if you are no longer using DeepAI
+
+# No API key needed for Craiyon
 
 # Flask app for port binding
 app = Flask(__name__)
@@ -35,9 +36,10 @@ async def fetch_image_craiyon(prompt):
 
     response = requests.post(url, json=data)
 
+    print(f"Craiyon API response status: {response.status_code}")  # Debugging log
     if response.status_code == 200:
-        # Craiyon returns a list of image URLs
         image_urls = response.json().get('images', [])
+        print(f"Images received: {image_urls}")  # Debugging log
         if image_urls:
             return image_urls[0]  # Return the first image URL
         else:
@@ -60,6 +62,7 @@ async def handle_prompt(update: Update, context):
     try:
         # Fetch image from Craiyon
         craiyon_image_url = await fetch_image_craiyon(user_input)
+        print(f"Craiyon image URL: {craiyon_image_url}")  # Debugging log
 
         # Save the image as JPG and send it to the user
         output_path = f"image_{update.message.from_user.id}.jpg"
