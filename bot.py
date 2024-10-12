@@ -9,7 +9,7 @@ import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # Use environment variables for sensitive information
-TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', 'cXrwQwz9h3rzVzCkwT5mdIrbJY6LzSxw5JlNz4KGEyCaCkH6WPJe7ybI')
+TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
 UNSPLASH_API_KEY = os.getenv('UNSPLASH_API_KEY', 'aNzTrVHwB-aL3x5KW5FpNubfRLFw5nVr3512Jxde0KQ')
 PEXELS_API_KEY = os.getenv('PEXELS_API_KEY', 'cXrwQwz9h3rzVzCkwT5mdIrbJY6LzSxw5JlNz4KGEyCaCkH6WPJe7ybI')
 # Flask app for port binding
