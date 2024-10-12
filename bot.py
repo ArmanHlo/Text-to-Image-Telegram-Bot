@@ -1,13 +1,20 @@
 import os
+import logging
 from pytube import YouTube
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from flask import Flask
 import threading
 import re
+import aiofiles
+import asyncio
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Use environment variables for sensitive information
-API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
+API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', 'YOUR_TELEGRAM_API_TOKEN')
 
 # Flask app for port binding
 app = Flask(__name__)
@@ -32,9 +39,9 @@ async def handle_youtube_link(update, context):
         youtube_url = update.message.text
 
         # Check if it's a valid YouTube URL and clean it
-        match = re.search(r'(https?://[^\s]+)', youtube_url)  # Extract the main URL
+        match = re.search(r'(https?://[^\s]+)', youtube_url)
         if match:
-            youtube_url = match.group(0)  # Use the cleaned URL
+            youtube_url = match.group(0)
         else:
             await update.message.reply_text("Please send a valid YouTube link.")
             return
@@ -49,7 +56,7 @@ async def handle_youtube_link(update, context):
         yt = YouTube(youtube_url)
 
         # Get all available streams
-        streams = yt.streams.filter(progressive=True)  # Filter for video with audio
+        streams = yt.streams.filter(progressive=True)
         available_resolutions = {stream.resolution: stream for stream in streams}
 
         if not available_resolutions:
@@ -67,6 +74,7 @@ async def handle_youtube_link(update, context):
         return CHOOSING_RESOLUTION
 
     except Exception as e:
+        logger.error(f"Error processing video: {str(e)}")
         await update.message.reply_text(f"Error processing video: {str(e)}")
 
 # Handle user selection of resolution
@@ -91,6 +99,7 @@ async def choose_resolution(update, context):
         await query.message.reply_video(video=open(video_path, 'rb'), caption=f"Here is your video: {video_title}")
 
     except Exception as e:
+        logger.error(f"Error downloading video: {str(e)}")
         await query.message.reply_text(f"Error downloading video: {str(e)}")
 
     finally:
@@ -113,7 +122,7 @@ def run_telegram_bot():
 
 if __name__ == '__main__':
     # Start the Flask server in a separate thread
-    port = int(os.environ.get('PORT', 5000))  # Use port from environment variable or default to 5000
+    port = int(os.environ.get('PORT', 5000))
     threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': port}).start()
 
     # Run the Telegram bot
