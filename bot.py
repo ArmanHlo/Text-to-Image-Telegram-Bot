@@ -12,6 +12,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
 IMG_GEN_API_KEY = os.getenv('IMG_GEN_API_KEY', '7fbfb5d9-7d41-4fc6-b295-9c00d5c01b38')  # Add your ImgGen AI API key here
 
+
 # Flask app for port binding
 app = Flask(__name__)
 
@@ -30,14 +31,21 @@ def ping_self():
 
 # Fetch image from ImgGen AI
 async def fetch_image_imggen(prompt):
-    url = "https://api.imggen.ai/generate"  # Use the correct ImgGen API URL
-    headers = {'Authorization': f'Bearer {IMG_GEN_API_KEY}', 'Content-Type': 'application/json'}
-    data = {'prompt': prompt}
+    url = "https://api.imggen.ai/v1/generate"  # Use the correct ImgGen API URL, adjust if needed
+    headers = {
+        'Authorization': f'Bearer {IMG_GEN_API_KEY}', 
+        'Content-Type': 'application/json'
+    }
+    data = {
+        'prompt': prompt,
+        'n': 1  # Requesting one image, check documentation for additional options
+    }
 
     response = requests.post(url, headers=headers, json=data)
 
     if response.status_code == 200:
-        return response.json().get('image_url')  # Ensure this key matches ImgGen's API response
+        # Adjust the key based on the API response format
+        return response.json().get('data')[0].get('url')  # Hypothetical structure, change as needed
     else:
         raise Exception("Error fetching image from ImgGen AI: " + response.text)
 
