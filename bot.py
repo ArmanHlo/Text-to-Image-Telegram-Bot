@@ -10,7 +10,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 # Use environment variables for sensitive information
 TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
-DEEPAI_API_KEY = os.getenv('DEEPAI_API_KEY', '336eedc6-788a-4b37-9290-5ba78b68b980')  # Add your DeepAI API key here
+# DEEPAI_API_KEY = os.getenv('DEEPAI_API_KEY', 'YOUR_DEEPAI_API_KEY')  # Remove if you are no longer using DeepAI
 
 # Flask app for port binding
 app = Flask(__name__)
@@ -28,18 +28,22 @@ def ping_self():
     except Exception as e:
         print(f"Failed to ping the app: {e}")
 
-# Fetch image from DeepAI
-async def fetch_image_deepai(prompt):
-    url = "https://api.deepai.org/api/text2img"
-    headers = {'api-key': DEEPAI_API_KEY}
-    data = {'text': prompt}
+# Fetch image from Craiyon
+async def fetch_image_craiyon(prompt):
+    url = "https://api.craiyon.com/generate"  # Craiyon API endpoint
+    data = {"prompt": prompt}
 
-    response = requests.post(url, headers=headers, data=data)
+    response = requests.post(url, json=data)
 
     if response.status_code == 200:
-        return response.json().get('output_url')  # Return the image URL
+        # Craiyon returns a list of image URLs
+        image_urls = response.json().get('images', [])
+        if image_urls:
+            return image_urls[0]  # Return the first image URL
+        else:
+            raise Exception("No images found.")
     else:
-        raise Exception("Error fetching image from DeepAI: " + response.text)
+        raise Exception("Error fetching image from Craiyon: " + response.text)
 
 # Download image from URL and save as JPG
 def download_image_as_jpg(image_url, output_path):
@@ -54,12 +58,12 @@ async def handle_prompt(update: Update, context):
     await update.message.reply_text("Generating an image based on your prompt...")
 
     try:
-        # Fetch image from DeepAI
-        deepai_image_url = await fetch_image_deepai(user_input)
+        # Fetch image from Craiyon
+        craiyon_image_url = await fetch_image_craiyon(user_input)
 
         # Save the image as JPG and send it to the user
         output_path = f"image_{update.message.from_user.id}.jpg"
-        download_image_as_jpg(deepai_image_url, output_path)
+        download_image_as_jpg(craiyon_image_url, output_path)
 
         with open(output_path, 'rb') as img_file:
             await context.bot.send_photo(chat_id=update.message.chat.id, photo=img_file)
