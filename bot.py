@@ -31,28 +31,32 @@ def ping_self():
 
 # Fetch image from ImgGen AI
 async def fetch_image_imggen(prompt):
-    url = "https://api.imggen.ai/v1/generate"  # Use the correct ImgGen API URL, adjust if needed
+    url = "https://app.imggen.ai/v1/generate-image"  # Use the correct ImgGen API URL
     headers = {
-        'Authorization': f'Bearer {IMG_GEN_API_KEY}', 
+        'X-IMGGEN-KEY': IMG_GEN_API_KEY, 
         'Content-Type': 'application/json'
     }
     data = {
         'prompt': prompt,
-        'n': 1  # Requesting one image, check documentation for additional options
+        'aspect_ratio': 'square',  # Set aspect ratio to square
+        'model': 'imggen-base'  # Choose the model you want to use
     }
 
     response = requests.post(url, headers=headers, json=data)
 
     if response.status_code == 200:
-        # Adjust the key based on the API response format
-        return response.json().get('data')[0].get('url')  # Hypothetical structure, change as needed
+        images_data = response.json()
+        if images_data['success']:
+            return images_data['images'][0]  # Return the first image in the response
+        else:
+            raise Exception("Error in image generation: " + images_data['message'])
     else:
         raise Exception("Error fetching image from ImgGen AI: " + response.text)
 
-# Download image from URL and save as JPG
-def download_image_as_jpg(image_url, output_path):
-    response = requests.get(image_url)
-    img = Image.open(BytesIO(response.content))
+# Decode base64 image and save as JPG
+def download_image_as_jpg(base64_image, output_path):
+    img_data = BytesIO(base64.b64decode(base64_image))
+    img = Image.open(img_data)
     img = img.convert("RGB")  # Convert to RGB for JPG
     img.save(output_path, "JPEG")
 
@@ -63,11 +67,11 @@ async def handle_prompt(update: Update, context):
 
     try:
         # Fetch image from ImgGen AI
-        imggen_image_url = await fetch_image_imggen(user_input)
+        imggen_image_base64 = await fetch_image_imggen(user_input)
 
         # Save the image as JPG and send it to the user
         output_path = f"image_{update.message.from_user.id}.jpg"
-        download_image_as_jpg(imggen_image_url, output_path)
+        download_image_as_jpg(imggen_image_base64, output_path)
 
         with open(output_path, 'rb') as img_file:
             await context.bot.send_photo(chat_id=update.message.chat.id, photo=img_file)
