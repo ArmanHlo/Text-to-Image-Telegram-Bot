@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Use environment variables for sensitive information
-API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', 'YOUR_TELEGRAM_API_TOKEN')
+API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
 
 # Flask app for port binding
 app = Flask(__name__)
