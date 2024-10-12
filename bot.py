@@ -1,116 +1,39 @@
 import os
-import logging
-import re
-import aiofiles
-import threading
-import asyncio
-from pytube import YouTube
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler
-from flask import Flask
+import telebot
+import pytube
+from youtube_dl import YoutubeDL
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Replace 'YOUR_BOT_TOKEN' with your actual bot token
+bot = telebot.TeleBot('7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
 
-# Telegram API token
-API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')  # Use environment variable or replace for testing
-
-# Flask app initialization
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Bot is running!"
-
-# Constants for conversation steps
-CHOOSING_RESOLUTION, DOWNLOADING = range(2)
-
-# Telegram bot handlers
-async def start(update, context):
-    await update.message.reply_text("Hello! Send me a YouTube link, and I'll give you a download option.")
-
-async def handle_youtube_link(update, context):
+@bot.message_handler(func=lambda message: message.text.startswith('https://www.youtube.com/'))
+def download_youtube_video(message):
     try:
-        youtube_url = update.message.text
-        match = re.search(r'(https?://[^\s]+)', youtube_url)
-        if match:
-            youtube_url = match.group(0)
-        else:
-            await update.message.reply_text("Please send a valid YouTube link.")
-            return
+        # Extract the YouTube video ID from the shared link
+        video_id = message.text.split('=')[1]
 
-        if "youtube.com" not in youtube_url and "youtu.be" not in youtube_url:
-            await update.message.reply_text("Please send a valid YouTube link.")
-            return
+        # Create a temporary directory to store the downloaded video
+        temp_dir = os.path.join(os.getcwd(), 'temp')
+        os.makedirs(temp_dir, exist_ok=True)
 
-        await update.message.reply_text("Processing your YouTube link...")
-        yt = YouTube(youtube_url)
+        # Use pytube to download the video in the highest resolution available
+        yt = pytube.YouTube(f'https://www.youtube.com/watch?v={video_id}')
+        stream = yt.streams.get_highest_resolution()
 
-        streams = yt.streams.filter(progressive=True)
-        available_resolutions = {stream.resolution: stream for stream in streams}
+        # Download the video to the temporary directory
+        video_path = os.path.join(temp_dir, f'{video_id}.mp4')
+        stream.download(filename=video_path)
 
-        if not available_resolutions:
-            await update.message.reply_text("No downloadable streams found.")
-            return
+        # Send the downloaded video to the user
+        with open(video_path, 'rb') as video_file:
+            bot.send_document(message.chat.id, video_file, caption='Here is your downloaded YouTube video')
 
-        keyboard = [[InlineKeyboardButton(res, callback_data=res) for res in available_resolutions.keys()]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await update.message.reply_text("Choose a resolution:", reply_markup=reply_markup)
-        context.user_data['available_resolutions'] = available_resolutions
-        return CHOOSING_RESOLUTION
+        # Remove the temporary video file
+        os.remove(video_path)
 
     except Exception as e:
-        logger.error(f"Error processing video: {str(e)}")
-        await update.message.reply_text(f"Error processing video: {str(e)}")
+        # Handle potential errors and send an appropriate message to the user
+        bot.send_message(message.chat.id, f"Error downloading video: {str(e)}")
 
-async def choose_resolution(update, context):
-    query = update.callback_query
-    await query.answer()
-    selected_resolution = query.data
-    available_resolutions = context.user_data['available_resolutions']
-
-    if selected_resolution not in available_resolutions:
-        await query.message.reply_text("Selected resolution is not available. Please choose again.")
-        return
-
-    selected_stream = available_resolutions[selected_resolution]
-    video_title = selected_stream.title.replace(" ", "_")
-    video_path = f"{video_title}_{selected_resolution}.mp4"
-
-    try:
-        await query.message.reply_text(f"Downloading video in {selected_resolution}...")
-        selected_stream.download(filename=video_path)
-
-        # Send the video to the user
-        await query.message.reply_video(video=open(video_path, 'rb'), caption=f"Here is your video: {video_title}")
-    except Exception as e:
-        logger.error(f"Error downloading video: {str(e)}")
-        await query.message.reply_text(f"Error downloading video: {str(e)}")
-    finally:
-        # Clean up the downloaded file asynchronously
-        async with aiofiles.open(video_path, mode='w') as f:
-            async for _ in f.write(''):
-                pass  # Empty write to ensure file deletion
-
-# Run the Telegram bot asynchronously
-async def run_telegram_bot():
-    application = Application.builder().token(API_TOKEN).build()
-    application.add_handler(CommandHandler('start', start))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_youtube_link))
-    application.add_handler(CallbackQueryHandler(choose_resolution))
-
-    # Start polling
-    await application.start_polling()
-    await application.idle()
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 6000))
-
-    # Run Flask server in the main thread
-    flask_thread = threading.Thread(target=lambda: app.run(host='0.0.0.0', port=port))
-    flask_thread.start()
-
-    # Run Telegram bot asynchronously
-    asyncio.run(run_telegram_bot())
+# Start the Telegram bot
+bot.polling()
