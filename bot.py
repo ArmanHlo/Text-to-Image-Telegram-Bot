@@ -1,20 +1,22 @@
 import os
 import logging
-from pytube import YouTube
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, CallbackQueryHandler
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from flask import Flask
-import asyncio
 import re
 import aiofiles
 import threading
+import asyncio
+from pytube import YouTube
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler
+from flask import Flask
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')  # Replace with your actual token or keep it as is for testing
+# Telegram API token
+API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')  # Use environment variable or replace for testing
 
+# Flask app initialization
 app = Flask(__name__)
 
 @app.route('/')
@@ -69,7 +71,6 @@ async def choose_resolution(update, context):
     selected_resolution = query.data
     available_resolutions = context.user_data['available_resolutions']
     
-    # Check if the selected resolution exists
     if selected_resolution not in available_resolutions:
         await query.message.reply_text("Selected resolution is not available. Please choose again.")
         return
@@ -97,7 +98,7 @@ async def run_telegram_bot():
     application = Application.builder().token(API_TOKEN).build()
     application.add_handler(CommandHandler('start', start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_youtube_link))
-    application.add_handler(CallbackQueryHandler(choose_resolution))  # Corrected filter to CallbackQueryHandler
+    application.add_handler(CallbackQueryHandler(choose_resolution))
 
     # Start polling
     await application.start_polling()
