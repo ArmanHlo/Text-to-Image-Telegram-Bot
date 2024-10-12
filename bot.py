@@ -1,12 +1,18 @@
 import os
 from pytube import YouTube
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from flask import Flask
+import threading
 
 # Use environment variables for sensitive information
 API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
 
-# Constants for conversation steps
-DOWNLOADING = 1
+# Flask app for port binding
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running!"
 
 # Handle the start command
 async def start(update, context):
@@ -66,4 +72,9 @@ def run_telegram_bot():
     application.run_polling()
 
 if __name__ == '__main__':
+    # Start the Flask server in a separate thread
+    port = int(os.environ.get('PORT', 6000))  # Use port from environment variable or default to 5000
+    threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': port}).start()
+
+    # Run the Telegram bot
     run_telegram_bot()
