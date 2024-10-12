@@ -94,7 +94,7 @@ def run_telegram_bot():
 
 if __name__ == '__main__':
     # Start the Flask server in a separate thread
-    port = int(os.environ.get('PORT', 5000))  # Port for Flask
+    port = int(os.environ.get('PORT', 6000))  # Port for Flask
     threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': port}).start()
 
     # Run the Telegram bot
