@@ -18,11 +18,11 @@ pipe = pipe.to(device)  # Move the pipeline to the appropriate device
 app = Flask(__name__)
 
 # Your bot's URL (this needs to be publicly accessible)
-WEBHOOK_URL = 'https://yourdomain.com/webhook'
+WEBHOOK_URL = 'https://yourdomain.com/webhook'  # Replace with your actual domain
 
 @app.route("/webhook", methods=['POST'])
 def webhook():
-    if request.headers.get('content-type') == 'application/json':
+    if request.headers.get('Content-Type') == 'application/json':
         json_string = request.get_data().decode('utf-8')
         update = telebot.types.Update.de_json(json_string)
         bot.process_new_updates([update])
@@ -38,11 +38,11 @@ def generate_image(message):
         image = pipe(prompt, guidance_scale=7.5, num_inference_steps=20).images[0]
         image_path = "output.jpg"
         image.save(image_path)
-        
+
         # Send the image back to the user
         with open(image_path, "rb") as img:
             bot.send_photo(message.chat.id, img)
-    
+
     except Exception as e:
         bot.send_message(message.chat.id, f"Error generating image: {str(e)}")
 
