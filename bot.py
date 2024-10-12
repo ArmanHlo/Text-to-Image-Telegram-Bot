@@ -2,6 +2,9 @@ import os
 import telebot
 import pytube
 from youtube_dl import YoutubeDL
+from flask import Flask
+
+app = Flask(__name__)
 
 # Replace 'YOUR_BOT_TOKEN' with your actual bot token
 bot = telebot.TeleBot('7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
@@ -35,5 +38,7 @@ def download_youtube_video(message):
         # Handle potential errors and send an appropriate message to the user
         bot.send_message(message.chat.id, f"Error downloading video: {str(e)}")
 
-# Start the Telegram bot
-bot.polling()
+# Start the Flask application and Telegram bot
+if __name__ == '__main__':
+    app.run(port=6000)
+    bot.polling()
