@@ -12,7 +12,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', 'cXrwQwz9h3rzVzCkwT5mdIrbJY6LzSxw5JlNz4KGEyCaCkH6WPJe7ybI')
 UNSPLASH_API_KEY = os.getenv('UNSPLASH_API_KEY', 'aNzTrVHwB-aL3x5KW5FpNubfRLFw5nVr3512Jxde0KQ')
 PEXELS_API_KEY = os.getenv('PEXELS_API_KEY', 'cXrwQwz9h3rzVzCkwT5mdIrbJY6LzSxw5JlNz4KGEyCaCkH6WPJe7ybI')
-
 # Flask app for port binding
 app = Flask(__name__)
 
@@ -22,7 +21,7 @@ def home():
 
 # Keep-alive ping function
 def ping_self():
-    url = "https://your-render-url.com"  # Replace with your Render app's URL
+    url = "https://text-to-image-telegram-bot.onrender.com"  # Replace with your Render app's URL
     try:
         requests.get(url)
         print(f"Pinged {url} to keep the app alive.")
@@ -50,6 +49,13 @@ def fetch_image_pexels(query):
     else:
         raise Exception("Error fetching image from Pexels: " + response.text)
 
+# Download image from URL and save as JPG
+def download_image_as_jpg(image_url, output_path):
+    response = requests.get(image_url)
+    img = Image.open(BytesIO(response.content))
+    img = img.convert("RGB")  # Convert to RGB for JPG
+    img.save(output_path, "JPEG")
+
 # Handle the user's prompt and fetch the image
 async def handle_prompt(update: Update, context):
     user_input = update.message.text
@@ -58,20 +64,23 @@ async def handle_prompt(update: Update, context):
     try:
         # Fetch image from Unsplash
         unsplash_image_url = fetch_image_unsplash(user_input)
-        
+
         # Fetch image from Pexels
         pexels_image_url = fetch_image_pexels(user_input)
 
-        # Send images back to the user
-        await context.bot.send_photo(chat_id=update.message.chat.id, photo=unsplash_image_url, caption="From Unsplash")
-        await context.bot.send_photo(chat_id=update.message.chat.id, photo=pexels_image_url, caption="From Pexels")
-    
+        # Save the first image as JPG and send it to the user
+        output_path = f"image_{update.message.from_user.id}.jpg"
+        download_image_as_jpg(unsplash_image_url, output_path)
+
+        with open(output_path, 'rb') as img_file:
+            await context.bot.send_photo(chat_id=update.message.chat.id, photo=img_file)
+
     except Exception as e:
         await update.message.reply_text(f"Error: {str(e)}")
 
 # Start command handler
 async def start(update, context):
-    await update.message.reply_text("Hello! Send me a prompt, and I will fetch an image for you!")
+    await update.message.reply_text("Hello! Send me a prompt, and I will fetch an image in JPG format for you!")
 
 # Run the Telegram bot
 def run_telegram_bot():
@@ -85,7 +94,7 @@ def run_telegram_bot():
 
 if __name__ == '__main__':
     # Start the Flask server in a separate thread
-    port = int(os.environ.get('PORT', 6000))  # Port for Flask
+    port = int(os.environ.get('PORT', 5000))  # Port for Flask
     threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': port}).start()
 
     # Run the Telegram bot
