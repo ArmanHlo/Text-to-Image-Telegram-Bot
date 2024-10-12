@@ -1,6 +1,7 @@
 import os
 from pytube import YouTube
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from flask import Flask
 import threading
 import re
@@ -14,6 +15,9 @@ app = Flask(__name__)
 @app.route('/')
 def home():
     return "Bot is running!"
+
+# Constants for conversation steps
+CHOOSING_RESOLUTION, DOWNLOADING = range(2)
 
 # Handle the start command
 async def start(update, context):
@@ -44,28 +48,55 @@ async def handle_youtube_link(update, context):
         # Download the YouTube video using pytube
         yt = YouTube(youtube_url)
 
-        # Get the highest resolution stream for download
-        stream = yt.streams.get_highest_resolution()
+        # Get all available streams
+        streams = yt.streams.filter(progressive=True)  # Filter for video with audio
+        available_resolutions = {stream.resolution: stream for stream in streams}
 
-        # Specify file path for download (use the video's title)
-        video_title = yt.title.replace(" ", "_")
-        video_path = f"{video_title}.mp4"
-        
-        # Download the video to local file
-        stream.download(filename=video_path)
+        if not available_resolutions:
+            await update.message.reply_text("No downloadable streams found.")
+            return
 
-        # Send the video file back to the user
-        await update.message.reply_text(f"Downloading video: {yt.title}")
-        
-        # Send the video file to the user
-        await update.message.reply_video(video=open(video_path, 'rb'))
-        
-        # Clean up the file after sending it
-        if os.path.exists(video_path):
-            os.remove(video_path)
+        # Create a list of resolution buttons
+        keyboard = [[InlineKeyboardButton(res, callback_data=res) for res in available_resolutions.keys()]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text("Choose a resolution:", reply_markup=reply_markup)
+
+        # Set the conversation state
+        context.user_data['available_resolutions'] = available_resolutions
+        return CHOOSING_RESOLUTION
 
     except Exception as e:
         await update.message.reply_text(f"Error processing video: {str(e)}")
+
+# Handle user selection of resolution
+async def choose_resolution(update, context):
+    query = update.callback_query
+    await query.answer()
+
+    selected_resolution = query.data
+    available_resolutions = context.user_data['available_resolutions']
+    selected_stream = available_resolutions[selected_resolution]
+
+    video_title = selected_stream.title.replace(" ", "_")
+    video_path = f"{video_title}_{selected_resolution}.mp4"
+    
+    try:
+        await query.message.reply_text(f"Downloading video in {selected_resolution}...")
+
+        # Download the video to local file
+        selected_stream.download(filename=video_path)
+
+        # Send the video file to the user
+        await query.message.reply_video(video=open(video_path, 'rb'), caption=f"Here is your video: {video_title}")
+
+    except Exception as e:
+        await query.message.reply_text(f"Error downloading video: {str(e)}")
+
+    finally:
+        # Clean up the file after sending it
+        if os.path.exists(video_path):
+            os.remove(video_path)
 
 # Run the Telegram bot
 def run_telegram_bot():
@@ -75,6 +106,7 @@ def run_telegram_bot():
     # Command and message handlers
     application.add_handler(CommandHandler('start', start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_youtube_link))
+    application.add_handler(MessageHandler(filters.CallbackQuery, choose_resolution))
 
     # Start polling for updates
     application.run_polling()
