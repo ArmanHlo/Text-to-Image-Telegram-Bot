@@ -10,8 +10,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 # Use environment variables for sensitive information
 TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
-UNSPLASH_API_KEY = os.getenv('UNSPLASH_API_KEY', 'aNzTrVHwB-aL3x5KW5FpNubfRLFw5nVr3512Jxde0KQ')
-PEXELS_API_KEY = os.getenv('PEXELS_API_KEY', 'cXrwQwz9h3rzVzCkwT5mdIrbJY6LzSxw5JlNz4KGEyCaCkH6WPJe7ybI')
+DEEPAI_API_KEY = os.getenv('DEEPAI_API_KEY', '336eedc6-788a-4b37-9290-5ba78b68b980')  # Add your DeepAI API key here
 # Flask app for port binding
 app = Flask(__name__)
 
@@ -28,26 +27,18 @@ def ping_self():
     except Exception as e:
         print(f"Failed to ping the app: {e}")
 
-# Fetch image from Unsplash
-def fetch_image_unsplash(query):
-    url = f"https://api.unsplash.com/photos/random?query={query}&client_id={UNSPLASH_API_KEY}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        image_url = response.json()["urls"]["regular"]
-        return image_url
-    else:
-        raise Exception("Error fetching image from Unsplash: " + response.text)
+# Fetch image from DeepAI
+async def fetch_image_deepai(prompt):
+    url = "https://api.deepai.org/api/text2img"
+    headers = {'api-key': DEEPAI_API_KEY}
+    data = {'text': prompt}
 
-# Fetch image from Pexels
-def fetch_image_pexels(query):
-    url = f"https://api.pexels.com/v1/search?query={query}&per_page=1"
-    headers = {'Authorization': PEXELS_API_KEY}
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200 and response.json()['photos']:
-        image_url = response.json()['photos'][0]['src']['original']
-        return image_url
+    response = requests.post(url, headers=headers, data=data)
+
+    if response.status_code == 200:
+        return response.json().get('output_url')  # Return the image URL
     else:
-        raise Exception("Error fetching image from Pexels: " + response.text)
+        raise Exception("Error fetching image from DeepAI: " + response.text)
 
 # Download image from URL and save as JPG
 def download_image_as_jpg(image_url, output_path):
@@ -59,18 +50,15 @@ def download_image_as_jpg(image_url, output_path):
 # Handle the user's prompt and fetch the image
 async def handle_prompt(update: Update, context):
     user_input = update.message.text
-    await update.message.reply_text("Fetching an image based on your prompt...")
+    await update.message.reply_text("Generating an image based on your prompt...")
 
     try:
-        # Fetch image from Unsplash
-        unsplash_image_url = fetch_image_unsplash(user_input)
+        # Fetch image from DeepAI
+        deepai_image_url = await fetch_image_deepai(user_input)
 
-        # Fetch image from Pexels
-        pexels_image_url = fetch_image_pexels(user_input)
-
-        # Save the first image as JPG and send it to the user
+        # Save the image as JPG and send it to the user
         output_path = f"image_{update.message.from_user.id}.jpg"
-        download_image_as_jpg(unsplash_image_url, output_path)
+        download_image_as_jpg(deepai_image_url, output_path)
 
         with open(output_path, 'rb') as img_file:
             await context.bot.send_photo(chat_id=update.message.chat.id, photo=img_file)
@@ -80,7 +68,7 @@ async def handle_prompt(update: Update, context):
 
 # Start command handler
 async def start(update, context):
-    await update.message.reply_text("Hello! Send me a prompt, and I will fetch an image in JPG format for you!")
+    await update.message.reply_text("Hello! Send me a prompt, and I will generate an image in JPG format for you!")
 
 # Run the Telegram bot
 def run_telegram_bot():
