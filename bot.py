@@ -3,6 +3,7 @@ from pytube import YouTube
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from flask import Flask
 import threading
+import re
 
 # Use environment variables for sensitive information
 API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
@@ -26,7 +27,14 @@ async def handle_youtube_link(update, context):
         # Get YouTube URL from the user's message
         youtube_url = update.message.text
 
-        # Check if it's a valid YouTube URL
+        # Check if it's a valid YouTube URL and clean it
+        match = re.search(r'(https?://[^\s]+)', youtube_url)  # Extract the main URL
+        if match:
+            youtube_url = match.group(0)  # Use the cleaned URL
+        else:
+            await update.message.reply_text("Please send a valid YouTube link.")
+            return
+
         if "youtube.com" not in youtube_url and "youtu.be" not in youtube_url:
             await update.message.reply_text("Please send a valid YouTube link.")
             return
@@ -73,7 +81,7 @@ def run_telegram_bot():
 
 if __name__ == '__main__':
     # Start the Flask server in a separate thread
-    port = int(os.environ.get('PORT', 6000))  # Use port from environment variable or default to 5000
+    port = int(os.environ.get('PORT', 5000))  # Use port from environment variable or default to 5000
     threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': port}).start()
 
     # Run the Telegram bot
