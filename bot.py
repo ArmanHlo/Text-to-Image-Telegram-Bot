@@ -39,7 +39,8 @@ async def fetch_image_imggen(prompt):
     data = {
         'prompt': prompt,
         'aspect_ratio': 'square',  # Set aspect ratio to square
-        'model': 'imggen-base'  # Choose the model you want to use
+        'model': 'imggen-base',  # Choose the model you want to use
+        'samples': 1  # Specify number of images to generate
     }
 
     print("Sending request to ImgGen AI...")  # Debug statement
