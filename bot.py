@@ -7,11 +7,11 @@ from telegram import Update
 from flask import Flask
 import threading
 from apscheduler.schedulers.background import BackgroundScheduler
+import base64  # Import base64 for decoding base64 images
 
 # Use environment variables for sensitive information
 TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
 IMG_GEN_API_KEY = os.getenv('IMG_GEN_API_KEY', '7fbfb5d9-7d41-4fc6-b295-9c00d5c01b38')  # Add your ImgGen AI API key here
-
 
 # Flask app for port binding
 app = Flask(__name__)
@@ -33,7 +33,7 @@ def ping_self():
 async def fetch_image_imggen(prompt):
     url = "https://app.imggen.ai/v1/generate-image"  # Use the correct ImgGen API URL
     headers = {
-        'X-IMGGEN-KEY': IMG_GEN_API_KEY, 
+        'X-IMGGEN-KEY': IMG_GEN_API_KEY,
         'Content-Type': 'application/json'
     }
     data = {
@@ -42,7 +42,10 @@ async def fetch_image_imggen(prompt):
         'model': 'imggen-base'  # Choose the model you want to use
     }
 
+    print("Sending request to ImgGen AI...")  # Debug statement
     response = requests.post(url, headers=headers, json=data)
+    print(f"Response status code: {response.status_code}")  # Debug statement
+    print(f"Response content: {response.text}")  # Debug statement
 
     if response.status_code == 200:
         images_data = response.json()
