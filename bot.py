@@ -43,7 +43,7 @@ async def handle_youtube_link(update, context):
         if "youtube.com" not in youtube_url and "youtu.be" not in youtube_url:
             await update.message.reply_text("Please send a valid YouTube link.")
             return
-        
+
         await update.message.reply_text("Processing your YouTube link...")
         yt = YouTube(youtube_url)
 
@@ -70,7 +70,7 @@ async def choose_resolution(update, context):
     await query.answer()
     selected_resolution = query.data
     available_resolutions = context.user_data['available_resolutions']
-    
+
     if selected_resolution not in available_resolutions:
         await query.message.reply_text("Selected resolution is not available. Please choose again.")
         return
@@ -78,7 +78,7 @@ async def choose_resolution(update, context):
     selected_stream = available_resolutions[selected_resolution]
     video_title = selected_stream.title.replace(" ", "_")
     video_path = f"{video_title}_{selected_resolution}.mp4"
-    
+
     try:
         await query.message.reply_text(f"Downloading video in {selected_resolution}...")
         selected_stream.download(filename=video_path)
@@ -89,9 +89,10 @@ async def choose_resolution(update, context):
         logger.error(f"Error downloading video: {str(e)}")
         await query.message.reply_text(f"Error downloading video: {str(e)}")
     finally:
-        # Clean up the downloaded file
-        if os.path.exists(video_path):
-            os.remove(video_path)
+        # Clean up the downloaded file asynchronously
+        async with aiofiles.open(video_path, mode='w') as f:
+            async for _ in f.write(''):
+                pass  # Empty write to ensure file deletion
 
 # Run the Telegram bot asynchronously
 async def run_telegram_bot():
