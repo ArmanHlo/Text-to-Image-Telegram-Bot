@@ -4,11 +4,15 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 from PIL import Image
 from io import BytesIO
+from flask import Flask
 
-# You can use either Pexels or Unsplash for free image search.
-# Set your API key for the chosen service.
-PEXELS_API_KEY = os.getenv("cXrwQwz9h3rzVzCkwT5mdIrbJY6LzSxw5JlNz4KGEyCaCkH6WPJe7ybI")  # Replace with your Pexels API key
-UNSPLASH_ACCESS_KEY = os.getenv("aNzTrVHwB-aL3x5KW5FpNubfRLFw5nVr3512Jxde0KQ")  # Replace with your Unsplash Access Key
+# Flask app to keep the bot alive and listen on port 6000
+app = Flask(__name__)
+
+# Set your API keys for Pexels or Unsplash directly in the code
+PEXELS_API_KEY = "cXrwQwz9h3rzVzCkwT5mdIrbJY6LzSxw5JlNz4KGEyCaCkH6WPJe7ybI"  # Replace with your Pexels API key
+UNSPLASH_ACCESS_KEY = "aNzTrVHwB-aL3x5KW5FpNubfRLFw5nVr3512Jxde0KQ"  # Replace with your Unsplash Access Key
+TELEGRAM_BOT_TOKEN = "7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA"  # Replace with your Telegram Bot token
 
 # Function to search images using Pexels API
 async def search_image(description):
@@ -64,10 +68,8 @@ async def handle_message(update: Update, context):
         await update.message.reply_text("Sorry, I couldn't find an image for that description.")
 
 # Main function to run the bot
-async def main():
-    # Set up Telegram bot token
-    bot_token = os.getenv("7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA")  # Replace with your Telegram Bot token
-    app = ApplicationBuilder().token(bot_token).build()
+async def run_bot():
+    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
     # Add command and message handlers
     app.add_handler(CommandHandler("start", start))
@@ -77,6 +79,16 @@ async def main():
     await app.start()
     await app.idle()
 
+# Flask endpoint to run the bot on port 6000
+@app.route("/")
+def home():
+    return "Telegram Bot is running."
+
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(main())
+
+    # Run the bot using asyncio
+    asyncio.run(run_bot())
+
+    # Run the Flask app on port 6000
+    app.run(host="0.0.0.0", port=6000)
