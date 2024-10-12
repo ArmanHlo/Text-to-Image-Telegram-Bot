@@ -1,30 +1,34 @@
 import os
 import telebot
 import pytube
-from youtube_dl import YoutubeDL
 from flask import Flask
+import threading
 
 app = Flask(__name__)
 
 # Replace 'YOUR_BOT_TOKEN' with your actual bot token
 bot = telebot.TeleBot('7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
 
+# Route for checking if Flask app is running
+@app.route('/')
+def home():
+    return "Flask app is running and Telegram bot is operational."
+
+# Telegram bot handler for YouTube links
 @bot.message_handler(func=lambda message: message.text.startswith('https://www.youtube.com/'))
 def download_youtube_video(message):
     try:
-        # Extract the YouTube video ID from the shared link
-        video_id = message.text.split('=')[1]
+        # Extract video ID from the YouTube URL
+        video_url = message.text
+        yt = pytube.YouTube(video_url)
 
         # Create a temporary directory to store the downloaded video
         temp_dir = os.path.join(os.getcwd(), 'temp')
         os.makedirs(temp_dir, exist_ok=True)
 
-        # Use pytube to download the video in the highest resolution available
-        yt = pytube.YouTube(f'https://www.youtube.com/watch?v={video_id}')
+        # Download the video in the highest resolution available
         stream = yt.streams.get_highest_resolution()
-
-        # Download the video to the temporary directory
-        video_path = os.path.join(temp_dir, f'{video_id}.mp4')
+        video_path = os.path.join(temp_dir, f'{yt.video_id}.mp4')
         stream.download(filename=video_path)
 
         # Send the downloaded video to the user
@@ -38,7 +42,14 @@ def download_youtube_video(message):
         # Handle potential errors and send an appropriate message to the user
         bot.send_message(message.chat.id, f"Error downloading video: {str(e)}")
 
-# Start the Flask application and Telegram bot
-if __name__ == '__main__':
-    app.run(port=6000)
+# Function to run the Telegram bot
+def run_telegram_bot():
     bot.polling()
+
+# Start the Flask app and Telegram bot concurrently
+if __name__ == '__main__':
+    # Run Flask in a separate thread
+    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=6000)).start()
+
+    # Run Telegram bot
+    run_telegram_bot()
