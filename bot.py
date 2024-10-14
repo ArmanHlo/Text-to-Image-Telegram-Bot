@@ -10,8 +10,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import base64  # Import base64 for decoding base64 images
 
 # Use environment variables for sensitive information
-TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN', '7679008149:AAFPfEGh7HdlCg5_PGUWMhVf-nj6zXqBDzA')
-IMG_GEN_API_KEY = os.getenv('IMG_GEN_API_KEY', '7fbfb5d9-7d41-4fc6-b295-9c00d5c01b38')  # Add your ImgGen AI API key here
+TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN')
+IMG_GEN_API_KEY = os.getenv('IMG_GEN_API_KEY')  # Add your ImgGen AI API key here
 
 # Flask app for port binding
 app = Flask(__name__)
