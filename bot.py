@@ -7,11 +7,10 @@ from telegram import Update
 from flask import Flask
 import threading
 from apscheduler.schedulers.background import BackgroundScheduler
-import base64  # Import base64 for decoding base64 images
 
 # Use environment variables for sensitive information
 TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN')
-STABLE_DIFFUSION_API_KEY = os.getenv('STABLE_DIFFUSION_API_KEY')  # Add your Stable Diffusion API key here
+STABLE_DIFFUSION_API_KEY = os.getenv('STABLE_DIFFUSION_API_KEY')
 
 # Flask app for port binding
 app = Flask(__name__)
@@ -43,15 +42,15 @@ async def fetch_image_stable_diffusion(prompt):
         'samples': 1  # Specify number of images to generate
     }
 
-    print("Sending request to Stable Diffusion API...")  # Debug statement
+    print("Sending request to Stable Diffusion API...")
     response = requests.post(url, headers=headers, json=data)
-    print(f"Response status code: {response.status_code}")  # Debug statement
-    print(f"Response content: {response.text}")  # Debug statement
+    print(f"Response status code: {response.status_code}")
+    print(f"Response content: {response.text}")
 
     if response.status_code == 200:
         images_data = response.json()
         if 'output' in images_data:
-            return images_data['output'][0]  # Return the first image in the response
+            return images_data['output'][0]  # Return the first image URL in the response
         else:
             raise Exception("Error in image generation: " + images_data.get('message', 'Unknown error'))
     else:
@@ -107,5 +106,5 @@ if __name__ == '__main__':
 
     # Set up the scheduler to ping the app URL every 5 minutes
     scheduler = BackgroundScheduler()
-    scheduler.add_job(ping_self, 'interval', minutes=1)
+    scheduler.add_job(ping_self, 'interval', minutes=5)
     scheduler.start()
