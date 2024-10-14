@@ -31,7 +31,7 @@ def ping_self():
 
 # Fetch image from Stable Diffusion API
 async def fetch_image_stable_diffusion(prompt):
-    url = "https://stablediffusionapi.com/api/v3/text2img"  # Use the correct Stable Diffusion API URL
+    url = "https://api.stablediffusionapi.com/v3/text2img"  # Use the correct Stable Diffusion API URL
     headers = {
         'Authorization': f'Bearer {STABLE_DIFFUSION_API_KEY}',
         'Content-Type': 'application/json'
@@ -67,7 +67,7 @@ def download_image_as_jpg(image_url, output_path):
 # Handle the user's prompt and fetch the image
 async def handle_prompt(update: Update, context):
     user_input = update.message.text
-    await update.message.reply_text("Generating an image based on your prompt...")
+    await update.message.reply_text("Generating an image based on your prompt... Please wait.")  # Notify user that the image is being processed
 
     try:
         # Fetch image from Stable Diffusion API
