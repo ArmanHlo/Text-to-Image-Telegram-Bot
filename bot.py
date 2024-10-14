@@ -1,4 +1,4 @@
-import os 
+import os
 import requests
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from io import BytesIO
@@ -30,7 +30,7 @@ def ping_self():
 
 # Fetch image from Stable Diffusion API
 async def fetch_image_stable_diffusion(prompt):
-    url = "https://stablediffusionapi.com/api/v3/text2img"  # Use the correct Stable Diffusion API URL
+    url = "https://stablediffusionapi.com/api/v3/text2img"
     headers = {
         'Authorization': f'Bearer {STABLE_DIFFUSION_API_KEY}',
         'Content-Type': 'application/json'
@@ -43,25 +43,28 @@ async def fetch_image_stable_diffusion(prompt):
     }
 
     print("Sending request to Stable Diffusion API...")
-    response = requests.post(url, headers=headers, json=data)
-    print(f"Response status code: {response.status_code}")
-    print(f"Response content: {response.text}")
-
-    if response.status_code == 200:
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()  # Raise an error for bad responses
         images_data = response.json()
+
         if 'output' in images_data:
             return images_data['output'][0]  # Return the first image URL in the response
         else:
             raise Exception("Error in image generation: " + images_data.get('message', 'Unknown error'))
-    else:
-        raise Exception("Error fetching image from Stable Diffusion API: " + response.text)
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Request to Stable Diffusion API failed: {e}")
 
 # Decode image and save as JPG
 def download_image_as_jpg(image_url, output_path):
-    response = requests.get(image_url)
-    img = Image.open(BytesIO(response.content))
-    img = img.convert("RGB")  # Convert to RGB for JPG
-    img.save(output_path, "JPEG")
+    try:
+        response = requests.get(image_url)
+        response.raise_for_status()  # Raise an error for bad responses
+        img = Image.open(BytesIO(response.content))
+        img = img.convert("RGB")  # Convert to RGB for JPG
+        img.save(output_path, "JPEG")
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Failed to download image: {e}")
 
 # Handle the user's prompt and fetch the image
 async def handle_prompt(update: Update, context):
