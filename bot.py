@@ -1,3 +1,4 @@
+import os
 import requests
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from io import BytesIO
@@ -57,10 +58,16 @@ async def fetch_image_stable_diffusion(prompt):
 
 # Decode image and save as JPG
 def download_image_as_jpg(image_url, output_path):
-    response = requests.get(image_url)
-    img = Image.open(BytesIO(response.content))
-    img = img.convert("RGB")  # Convert to RGB for JPG
-    img.save(output_path, "JPEG")
+    try:
+        response = requests.get(image_url)
+        response.raise_for_status()  # Raise an error for bad responses
+        img = Image.open(BytesIO(response.content))
+        img = img.convert("RGB")  # Convert to RGB for JPG
+        img.save(output_path, "JPEG")
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Failed to download image: {e}")
+    except Exception as e:
+        raise Exception(f"Failed to save image as JPG: {e}")
 
 # Handle the user's prompt and fetch the image
 async def handle_prompt(update: Update, context):
