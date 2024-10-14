@@ -4,7 +4,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from io import BytesIO
 from PIL import Image
 from telegram import Update
-from flask import Flask  # Corrected the import
+from flask import Flask
 import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -33,7 +33,7 @@ def ping_self():
 # Fetch image from Stable Diffusion API
 async def fetch_image_stable_diffusion(prompt, negative_prompt=None):
     """Fetch an image from the Stable Diffusion API based on the user's prompt."""
-    url = "https://stablediffusionapi.com/api/v3/text2img"  # Use the correct Stable Diffusion API URL
+    url = "https://stablediffusionapi.com/api/v3/text2img"
     headers = {
         'Authorization': f'Bearer {STABLE_DIFFUSION_API_KEY}',
         'Content-Type': 'application/json'
@@ -42,21 +42,21 @@ async def fetch_image_stable_diffusion(prompt, negative_prompt=None):
         'key': STABLE_DIFFUSION_API_KEY,
         'prompt': prompt,
         'negative_prompt': negative_prompt,
-        'width': 512,  # Set desired image width
-        'height': 512,  # Set desired image height
-        'samples': 1,  # Specify number of images to generate
-        'num_inference_steps': 20,  # Number of denoising steps
-        'safety_checker': 'no',  # Set to 'yes' if you want to use a safety checker
-        'enhance_prompt': 'yes',  # Enhance prompts for better results
-        'seed': None,  # Random seed
-        'guidance_scale': 7.5,  # Scale for classifier-free guidance
-        'multi_lingual': 'no',  # Multi-lingual support
-        'panorama': 'no',  # Panorama image
-        'self_attention': 'no',  # High quality image
-        'upscale': 'no',  # Upscale the resolution
-        'embeddings_model': None,  # Model embeddings
-        'webhook': None,  # Webhook URL
-        'track_id': None  # Track ID for webhooks
+        'width': 512,
+        'height': 512,
+        'samples': 1,
+        'num_inference_steps': 20,
+        'safety_checker': 'no',
+        'enhance_prompt': 'yes',
+        'seed': None,
+        'guidance_scale': 7.5,
+        'multi_lingual': 'no',
+        'panorama': 'no',
+        'self_attention': 'no',
+        'upscale': 'no',
+        'embeddings_model': None,
+        'webhook': None,
+        'track_id': None
     }
 
     print("Sending request to Stable Diffusion API...")
@@ -67,7 +67,7 @@ async def fetch_image_stable_diffusion(prompt, negative_prompt=None):
     if response.status_code == 200:
         images_data = response.json()
         if 'output' in images_data:
-            return images_data['output'][0]  # Return the first image URL in the response
+            return images_data['output'][0]
         else:
             raise Exception("Error in image generation: " + images_data.get('message', 'Unknown error'))
     else:
@@ -78,9 +78,9 @@ def download_image_as_jpg(image_url, output_path):
     """Download the image from the given URL and save it as a JPG."""
     try:
         response = requests.get(image_url)
-        response.raise_for_status()  # Raise an error for bad responses
+        response.raise_for_status()
         img = Image.open(BytesIO(response.content))
-        img = img.convert("RGB")  # Convert to RGB for JPG
+        img = img.convert("RGB")
         img.save(output_path, "JPEG")
     except requests.exceptions.RequestException as e:
         raise Exception(f"Failed to download image: {e}")
