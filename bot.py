@@ -21,7 +21,7 @@ def home():
 
 # Keep-alive ping function
 def ping_self():
-    url = "https://your-render-app-url.onrender.com"  # Replace with your Render app's URL
+    url = "https://text-to-image-telegram-bot.onrender.com"  # Replace with your Render app's URL
     try:
         requests.get(url)
         print(f"Pinged {url} to keep the app alive.")
@@ -65,6 +65,8 @@ def download_image_as_jpg(image_url, output_path):
         img.save(output_path, "JPEG")
     except requests.exceptions.RequestException as e:
         raise Exception(f"Failed to download image: {e}")
+    except Exception as e:
+        raise Exception(f"Failed to save image as JPG: {e}")
 
 # Handle the user's prompt and fetch the image
 async def handle_prompt(update: Update, context):
