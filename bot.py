@@ -31,18 +31,32 @@ def ping_self():
         print(f"Failed to ping the app: {e}")
 
 # Fetch image from Stable Diffusion API
-async def fetch_image_stable_diffusion(prompt):
+async def fetch_image_stable_diffusion(prompt, negative_prompt=None):
     """Fetch an image from the Stable Diffusion API based on the user's prompt."""
-    url = "https://api.stablediffusionapi.com/v3/text2img"  # Use the correct Stable Diffusion API URL
+    url = "https://stablediffusionapi.com/api/v3/text2img"  # Use the correct Stable Diffusion API URL
     headers = {
         'Authorization': f'Bearer {STABLE_DIFFUSION_API_KEY}',
         'Content-Type': 'application/json'
     }
     data = {
+        'key': STABLE_DIFFUSION_API_KEY,
         'prompt': prompt,
+        'negative_prompt': negative_prompt,
         'width': 512,  # Set desired image width
         'height': 512,  # Set desired image height
-        'samples': 1  # Specify number of images to generate
+        'samples': 1,  # Specify number of images to generate
+        'num_inference_steps': 20,  # Number of denoising steps
+        'safety_checker': 'no',  # Set to 'yes' if you want to use a safety checker
+        'enhance_prompt': 'yes',  # Enhance prompts for better results
+        'seed': None,  # Random seed
+        'guidance_scale': 7.5,  # Scale for classifier-free guidance
+        'multi_lingual': 'no',  # Multi-lingual support
+        'panorama': 'no',  # Panorama image
+        'self_attention': 'no',  # High quality image
+        'upscale': 'no',  # Upscale the resolution
+        'embeddings_model': None,  # Model embeddings
+        'webhook': None,  # Webhook URL
+        'track_id': None  # Track ID for webhooks
     }
 
     print("Sending request to Stable Diffusion API...")
