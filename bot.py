@@ -4,7 +4,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from io import BytesIO
 from PIL import Image
 from telegram import Update
-from flask import Flask
+from flask import Flask  # Corrected the import
 import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -17,10 +17,12 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
+    """Home route for the Flask app."""
     return "Bot is running!"
 
 # Keep-alive ping function
 def ping_self():
+    """Ping the app URL to keep it alive."""
     url = "https://your-render-app-url.onrender.com"  # Replace with your Render app's URL
     try:
         requests.get(url)
@@ -30,6 +32,7 @@ def ping_self():
 
 # Fetch image from Stable Diffusion API
 async def fetch_image_stable_diffusion(prompt):
+    """Fetch an image from the Stable Diffusion API based on the user's prompt."""
     url = "https://api.stablediffusionapi.com/v3/text2img"  # Use the correct Stable Diffusion API URL
     headers = {
         'Authorization': f'Bearer {STABLE_DIFFUSION_API_KEY}',
@@ -58,6 +61,7 @@ async def fetch_image_stable_diffusion(prompt):
 
 # Decode image and save as JPG
 def download_image_as_jpg(image_url, output_path):
+    """Download the image from the given URL and save it as a JPG."""
     try:
         response = requests.get(image_url)
         response.raise_for_status()  # Raise an error for bad responses
@@ -71,6 +75,7 @@ def download_image_as_jpg(image_url, output_path):
 
 # Handle the user's prompt and fetch the image
 async def handle_prompt(update: Update, context):
+    """Handle the user's prompt and send the generated image."""
     user_input = update.message.text
     await update.message.reply_text("Generating an image based on your prompt...")
 
@@ -90,10 +95,12 @@ async def handle_prompt(update: Update, context):
 
 # Start command handler
 async def start(update, context):
+    """Start command handler for the bot."""
     await update.message.reply_text("Hello! Send me a prompt, and I will generate an image in JPG format for you!")
 
 # Run the Telegram bot
 def run_telegram_bot():
+    """Initialize and run the Telegram bot."""
     application = Application.builder().token(TELEGRAM_API_TOKEN).build()
 
     # Add handlers
