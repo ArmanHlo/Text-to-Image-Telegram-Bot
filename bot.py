@@ -23,7 +23,7 @@ def home():
 # Keep-alive ping function
 def ping_self():
     """Ping the app URL to keep it alive."""
-    url = "https://your-render-app-url.onrender.com"  # Replace with your Render app's URL
+    url = "https://text-to-image-telegram-bot.onrender.com"  # Replace with your Render app's URL
     try:
         requests.get(url)
         print(f"Pinged {url} to keep the app alive.")
@@ -133,5 +133,5 @@ if __name__ == '__main__':
 
     # Set up the scheduler to ping the app URL every 5 minutes
     scheduler = BackgroundScheduler()
-    scheduler.add_job(ping_self, 'interval', minutes=5)
+    scheduler.add_job(ping_self, 'interval', minutes=1)
     scheduler.start()
