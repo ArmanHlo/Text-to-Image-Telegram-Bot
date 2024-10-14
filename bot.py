@@ -11,7 +11,7 @@ import base64  # Import base64 for decoding base64 images
 
 # Use environment variables for sensitive information
 TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN')
-IMG_GEN_API_KEY = os.getenv('IMG_GEN_API_KEY')  # Add your ImgGen AI API key here
+STABLE_DIFFUSION_API_KEY = os.getenv('STABLE_DIFFUSION_API_KEY')  # Add your Stable Diffusion API key here
 
 # Flask app for port binding
 app = Flask(__name__)
@@ -29,38 +29,38 @@ def ping_self():
     except Exception as e:
         print(f"Failed to ping the app: {e}")
 
-# Fetch image from ImgGen AI
-async def fetch_image_imggen(prompt):
-    url = "https://app.imggen.ai/v1/generate-image"  # Use the correct ImgGen API URL
+# Fetch image from Stable Diffusion API
+async def fetch_image_stable_diffusion(prompt):
+    url = "https://api.stablediffusionapi.com/v3/text2img"  # Use the correct Stable Diffusion API URL
     headers = {
-        'X-IMGGEN-KEY': IMG_GEN_API_KEY,
+        'Authorization': f'Bearer {STABLE_DIFFUSION_API_KEY}',
         'Content-Type': 'application/json'
     }
     data = {
         'prompt': prompt,
-        'aspect_ratio': 'square',  # Set aspect ratio to square
-        'model': 'imggen-base',  # Choose the model you want to use
+        'width': 512,  # Set desired image width
+        'height': 512,  # Set desired image height
         'samples': 1  # Specify number of images to generate
     }
 
-    print("Sending request to ImgGen AI...")  # Debug statement
+    print("Sending request to Stable Diffusion API...")  # Debug statement
     response = requests.post(url, headers=headers, json=data)
     print(f"Response status code: {response.status_code}")  # Debug statement
     print(f"Response content: {response.text}")  # Debug statement
 
     if response.status_code == 200:
         images_data = response.json()
-        if images_data['success']:
-            return images_data['images'][0]  # Return the first image in the response
+        if 'output' in images_data:
+            return images_data['output'][0]  # Return the first image in the response
         else:
-            raise Exception("Error in image generation: " + images_data['message'])
+            raise Exception("Error in image generation: " + images_data.get('message', 'Unknown error'))
     else:
-        raise Exception("Error fetching image from ImgGen AI: " + response.text)
+        raise Exception("Error fetching image from Stable Diffusion API: " + response.text)
 
-# Decode base64 image and save as JPG
-def download_image_as_jpg(base64_image, output_path):
-    img_data = BytesIO(base64.b64decode(base64_image))
-    img = Image.open(img_data)
+# Decode image and save as JPG
+def download_image_as_jpg(image_url, output_path):
+    response = requests.get(image_url)
+    img = Image.open(BytesIO(response.content))
     img = img.convert("RGB")  # Convert to RGB for JPG
     img.save(output_path, "JPEG")
 
@@ -70,12 +70,12 @@ async def handle_prompt(update: Update, context):
     await update.message.reply_text("Generating an image based on your prompt...")
 
     try:
-        # Fetch image from ImgGen AI
-        imggen_image_base64 = await fetch_image_imggen(user_input)
+        # Fetch image from Stable Diffusion API
+        stable_diffusion_image_url = await fetch_image_stable_diffusion(user_input)
 
         # Save the image as JPG and send it to the user
         output_path = f"image_{update.message.from_user.id}.jpg"
-        download_image_as_jpg(imggen_image_base64, output_path)
+        download_image_as_jpg(stable_diffusion_image_url, output_path)
 
         with open(output_path, 'rb') as img_file:
             await context.bot.send_photo(chat_id=update.message.chat.id, photo=img_file)
