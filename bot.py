@@ -1,4 +1,4 @@
-import os
+import os 
 import requests
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from io import BytesIO
@@ -7,7 +7,6 @@ from telegram import Update
 from flask import Flask
 import threading
 from apscheduler.schedulers.background import BackgroundScheduler
-import time
 
 # Use environment variables for sensitive information
 TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN')
@@ -67,7 +66,7 @@ def download_image_as_jpg(image_url, output_path):
 # Handle the user's prompt and fetch the image
 async def handle_prompt(update: Update, context):
     user_input = update.message.text
-    await update.message.reply_text("Generating an image based on your prompt... Please wait.")  # Notify user that the image is being processed
+    await update.message.reply_text("Generating an image based on your prompt...")
 
     try:
         # Fetch image from Stable Diffusion API
@@ -88,23 +87,14 @@ async def start(update, context):
     await update.message.reply_text("Hello! Send me a prompt, and I will generate an image in JPG format for you!")
 
 # Run the Telegram bot
-async def run_telegram_bot():
+def run_telegram_bot():
     application = Application.builder().token(TELEGRAM_API_TOKEN).build()
 
     # Add handlers
     application.add_handler(CommandHandler('start', start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_prompt))
 
-    while True:
-        try:
-            await application.run_polling()
-        except Exception as e:
-            print(f"Error: {str(e)}")
-            if "terminated by other getUpdates request" in str(e):
-                print("Detected conflict, retrying in 5 seconds...")
-                time.sleep(5)  # Wait before retrying
-            else:
-                break  # Break the loop for other exceptions
+    application.run_polling()
 
 if __name__ == '__main__':
     # Start the Flask server in a separate thread
@@ -112,7 +102,7 @@ if __name__ == '__main__':
     threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': port}).start()
 
     # Run the Telegram bot
-    asyncio.run(run_telegram_bot())  # Use asyncio.run for running async functions
+    run_telegram_bot()
 
     # Set up the scheduler to ping the app URL every 5 minutes
     scheduler = BackgroundScheduler()
