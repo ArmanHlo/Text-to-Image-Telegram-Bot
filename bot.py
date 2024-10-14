@@ -7,6 +7,7 @@ from telegram import Update
 from flask import Flask
 import threading
 from apscheduler.schedulers.background import BackgroundScheduler
+import time
 
 # Use environment variables for sensitive information
 TELEGRAM_API_TOKEN = os.getenv('TELEGRAM_API_TOKEN')
@@ -30,7 +31,7 @@ def ping_self():
 
 # Fetch image from Stable Diffusion API
 async def fetch_image_stable_diffusion(prompt):
-    url = "https://api.stablediffusionapi.com/v3/text2img"  # Use the correct Stable Diffusion API URL
+    url = "https://stablediffusionapi.com/api/v3/text2img"  # Use the correct Stable Diffusion API URL
     headers = {
         'Authorization': f'Bearer {STABLE_DIFFUSION_API_KEY}',
         'Content-Type': 'application/json'
@@ -87,14 +88,23 @@ async def start(update, context):
     await update.message.reply_text("Hello! Send me a prompt, and I will generate an image in JPG format for you!")
 
 # Run the Telegram bot
-def run_telegram_bot():
+async def run_telegram_bot():
     application = Application.builder().token(TELEGRAM_API_TOKEN).build()
 
     # Add handlers
     application.add_handler(CommandHandler('start', start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_prompt))
 
-    application.run_polling()
+    while True:
+        try:
+            await application.run_polling()
+        except Exception as e:
+            print(f"Error: {str(e)}")
+            if "terminated by other getUpdates request" in str(e):
+                print("Detected conflict, retrying in 5 seconds...")
+                time.sleep(5)  # Wait before retrying
+            else:
+                break  # Break the loop for other exceptions
 
 if __name__ == '__main__':
     # Start the Flask server in a separate thread
@@ -102,7 +112,7 @@ if __name__ == '__main__':
     threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': port}).start()
 
     # Run the Telegram bot
-    run_telegram_bot()
+    asyncio.run(run_telegram_bot())  # Use asyncio.run for running async functions
 
     # Set up the scheduler to ping the app URL every 5 minutes
     scheduler = BackgroundScheduler()
